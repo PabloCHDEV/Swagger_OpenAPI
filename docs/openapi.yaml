@@ -1,0 +1,609 @@
+openapi: 3.0.3
+
+info:
+  title: API de Interoperabilidad
+  version: 1.0.0
+  description: >
+    Documentación de los servicios de autenticación y consulta
+    del FeatureServer de Interoperabilidad.
+
+servers:
+  - url: "{scheme}://{host}:{port}"
+    description: Servidor temporal de la API
+    variables:
+      scheme:
+        default: http
+        enum:
+          - http
+          - https
+      host:
+        default: 100.29.139.148
+      port:
+        default: "3903"
+
+tags:
+  - name: Autenticación
+    description: Operaciones para obtener credenciales de acceso.
+
+  - name: Feature Service
+    description: Información general del servicio geográfico.
+
+  - name: Capas
+    description: Información y consulta de las capas geográficas.
+
+paths:
+  /oauth/token:
+    post:
+      tags:
+        - Autenticación
+      summary: Obtener token de acceso
+      description: >
+        Recibe las credenciales requeridas por el servidor y devuelve
+        un token para consumir los endpoints protegidos.
+      operationId: obtenerToken
+
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+              properties:
+                grant_type:
+                  type: string
+                  description: Tipo de autorización utilizado para solicitar el token.
+                  enum:
+                    - client_credentials
+                  default: client_credentials
+                  example: client_credentials
+
+                client_id:
+                  type: string
+                  description: Identificador del cliente proporcionado por el servidor.
+
+                client_secret:
+                  type: string
+                  format: password
+                  description: Secreto del cliente proporcionado por el servidor.
+            encoding:
+              grant_type:
+                style: form
+              client_id:
+                style: form
+              client_secret:
+                style: form
+
+      responses:
+        "200":
+          description: Token generado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+              example:
+                access_token: token_generado_por_el_servidor
+                token_type: Bearer
+                expires_in: 3600
+
+        "400":
+          description: Solicitud inválida o campos incompletos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Credenciales inválidas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error interno al generar el token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /arcgis/rest/services/Interoperabilidad/FeatureServer:
+    get:
+      tags:
+        - Feature Service
+      summary: Obtener información del FeatureServer
+      description: >
+        Devuelve los metadatos generales del servicio de Interoperabilidad,
+        incluyendo las capas y capacidades disponibles.
+      operationId: obtenerFeatureServer
+
+      parameters:
+        - name: f
+          in: query
+          required: false
+          description: Formato en el que el servidor devolverá la respuesta.
+          schema:
+            type: string
+            enum:
+              - json
+              - pjson
+            default: json
+          example: json
+
+      responses:
+        "200":
+          description: Información del FeatureServer obtenida correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureServerResponse"
+
+        "400":
+          description: Parámetros incorrectos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Token ausente, inválido o vencido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "404":
+          description: FeatureServer no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /arcgis/rest/services/Interoperabilidad/FeatureServer/0:
+    get:
+      tags:
+        - Capas
+      summary: Obtener información de la capa 0
+      description: >
+        Devuelve los metadatos, campos, geometría y capacidades
+        configuradas para la capa con identificador 0.
+      operationId: obtenerCapaCero
+
+      parameters:
+        - name: f
+          in: query
+          required: false
+          description: Formato en el que el servidor devolverá la respuesta.
+          schema:
+            type: string
+            enum:
+              - json
+              - pjson
+            default: json
+          example: json
+
+      responses:
+        "200":
+          description: Información de la capa obtenida correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LayerResponse"
+
+        "400":
+          description: Parámetros incorrectos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Token ausente, inválido o vencido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "404":
+          description: Capa no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /arcgis/rest/services/Interoperabilidad/FeatureServer/0/query:
+    get:
+      tags:
+        - Capas
+      summary: Consultar registros de la capa 0
+      description: >
+        Ejecuta una consulta sobre los registros disponibles en la capa 0
+        del FeatureServer de Interoperabilidad.
+      operationId: consultarCapaCero
+
+      parameters:
+        - name: where
+          in: query
+          required: true
+          description: Condición utilizada para filtrar los registros.
+          schema:
+            type: string
+            default: "1=1"
+          example: "1=1"
+
+        - name: outFields
+          in: query
+          required: false
+          description: >
+            Lista de campos que se devolverán. Utilice un asterisco
+            para solicitar todos los campos.
+          schema:
+            type: string
+            default: "*"
+          example: "*"
+
+        - name: returnGeometry
+          in: query
+          required: false
+          description: Indica si la respuesta debe incluir la geometría.
+          schema:
+            type: boolean
+            default: false
+          example: false
+
+        - name: objectIds
+          in: query
+          required: false
+          description: Lista de identificadores separados por comas.
+          schema:
+            type: string
+          example: "1,2,3"
+
+        - name: orderByFields
+          in: query
+          required: false
+          description: Campos utilizados para ordenar los resultados.
+          schema:
+            type: string
+          example: "OBJECTID ASC"
+
+        - name: resultOffset
+          in: query
+          required: false
+          description: Posición inicial para la paginación.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+
+        - name: resultRecordCount
+          in: query
+          required: false
+          description: Cantidad máxima de registros solicitados.
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          example: 10
+
+        - name: f
+          in: query
+          required: false
+          description: Formato en el que el servidor devolverá la respuesta.
+          schema:
+            type: string
+            enum:
+              - json
+              - pjson
+            default: json
+          example: json
+
+      responses:
+        "200":
+          description: Consulta realizada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResponse"
+
+        "400":
+          description: Condición o parámetros de consulta incorrectos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "401":
+          description: Token ausente, inválido o vencido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "404":
+          description: Servicio o capa no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+        "500":
+          description: Error interno al consultar la capa.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: Token generado por el servidor.
+          example: token_generado_por_el_servidor
+
+        token_type:
+          type: string
+          description: Tipo de token generado.
+          example: Bearer
+
+        expires_in:
+          type: integer
+          description: Tiempo de vigencia del token.
+          example: 3600
+
+      additionalProperties: true
+
+    FeatureServerResponse:
+      type: object
+      description: Información general del FeatureServer.
+      properties:
+        currentVersion:
+          type: number
+          format: float
+          description: Versión del servicio.
+          example: 11.1
+
+        serviceDescription:
+          type: string
+          description: Descripción del servicio.
+          example: Servicio de interoperabilidad
+
+        capabilities:
+          type: string
+          description: Capacidades habilitadas en el servicio.
+          example: Query
+
+        layers:
+          type: array
+          description: Capas disponibles en el FeatureServer.
+          items:
+            $ref: "#/components/schemas/LayerSummary"
+
+        tables:
+          type: array
+          description: Tablas disponibles en el servicio.
+          items:
+            type: object
+            additionalProperties: true
+
+      additionalProperties: true
+
+    LayerSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Identificador de la capa.
+          example: 0
+
+        name:
+          type: string
+          description: Nombre de la capa.
+          example: Interoperabilidad
+
+        parentLayerId:
+          type: integer
+          description: Identificador de la capa superior.
+          example: -1
+
+        defaultVisibility:
+          type: boolean
+          description: Indica si la capa es visible de forma predeterminada.
+          example: true
+
+      additionalProperties: true
+
+    LayerResponse:
+      type: object
+      description: Información detallada de una capa.
+      properties:
+        id:
+          type: integer
+          description: Identificador de la capa.
+          example: 0
+
+        name:
+          type: string
+          description: Nombre de la capa.
+          example: Interoperabilidad
+
+        type:
+          type: string
+          description: Tipo de capa.
+          example: Feature Layer
+
+        displayField:
+          type: string
+          description: Campo utilizado como identificador visual.
+          example: nombre
+
+        objectIdField:
+          type: string
+          description: Campo identificador de cada registro.
+          example: OBJECTID
+
+        geometryType:
+          type: string
+          description: Tipo de geometría de la capa.
+          example: esriGeometryPoint
+
+        capabilities:
+          type: string
+          description: Capacidades disponibles en la capa.
+          example: Query
+
+        fields:
+          type: array
+          description: Campos disponibles en la capa.
+          items:
+            $ref: "#/components/schemas/Field"
+
+      additionalProperties: true
+
+    Field:
+      type: object
+      description: Definición de un campo de la capa.
+      properties:
+        name:
+          type: string
+          description: Nombre interno del campo.
+          example: OBJECTID
+
+        type:
+          type: string
+          description: Tipo de dato del campo.
+          example: esriFieldTypeOID
+
+        alias:
+          type: string
+          description: Nombre visible del campo.
+          example: OBJECTID
+
+        nullable:
+          type: boolean
+          description: Indica si el campo acepta valores nulos.
+          example: false
+
+        editable:
+          type: boolean
+          description: Indica si el campo puede modificarse.
+          example: false
+
+      additionalProperties: true
+
+    QueryResponse:
+      type: object
+      description: Resultado de una consulta a la capa.
+      properties:
+        objectIdFieldName:
+          type: string
+          description: Nombre del campo identificador.
+          example: OBJECTID
+
+        uniqueIdField:
+          type: object
+          description: Información del campo identificador único.
+          additionalProperties: true
+
+        geometryType:
+          type: string
+          description: Tipo de geometría devuelto.
+          example: esriGeometryPoint
+
+        spatialReference:
+          type: object
+          description: Sistema de referencia espacial.
+          properties:
+            wkid:
+              type: integer
+              example: 4326
+          additionalProperties: true
+
+        fields:
+          type: array
+          description: Definición de los campos devueltos.
+          items:
+            $ref: "#/components/schemas/Field"
+
+        features:
+          type: array
+          description: Registros que cumplen la condición indicada.
+          items:
+            $ref: "#/components/schemas/Feature"
+
+        exceededTransferLimit:
+          type: boolean
+          description: Indica si existen más resultados que los devueltos.
+          example: false
+
+      additionalProperties: true
+
+    Feature:
+      type: object
+      description: Registro obtenido de la capa.
+      properties:
+        attributes:
+          type: object
+          description: Atributos del registro.
+          additionalProperties: true
+          example:
+            OBJECTID: 1
+            nombre: Registro de ejemplo
+
+        geometry:
+          type: object
+          description: Información geográfica del registro.
+          additionalProperties: true
+          example:
+            x: -90.5
+            y: 14.6
+
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      description: Respuesta generada cuando ocurre un error.
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              description: Código del error.
+              example: 400
+
+            message:
+              type: string
+              description: Descripción general del error.
+              example: Parámetros de consulta incorrectos
+
+            details:
+              type: array
+              description: Detalles adicionales del error.
+              items:
+                type: string
+
+          additionalProperties: true
+
+      additionalProperties: true
