@@ -1,5 +1,13 @@
 {
+  "name": "swagger-interoperabilidad",
+  "version": "1.0.1",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
+    "express": "^4.22.1",
     "swagger-ui-express": "^5.0.1",
     "yamljs": "^0.3.0"
   }
