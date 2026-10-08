@@ -43,13 +43,32 @@ app.get("/openapi.json", (req, res) => {
 
 // Configuración de Swagger UI.
 const swaggerUiOptions = {
-  explorer: true,
+  explorer: false,
   customSiteTitle: "API de Interoperabilidad",
   swaggerOptions: {
     persistAuthorization: true,
     displayRequestDuration: true,
     filter: true,
-    tryItOutEnabled: true
+    tryItOutEnabled: true,
+
+    // Cuando POST /oauth/token responde 200, toma el access_token y
+    // autoriza Swagger automáticamente (equivale a pulsar Authorize y
+    // pegar el token en BearerAuth). Así los GET siempre llevan
+    // "Authorization: Bearer <token>".
+    responseInterceptor: (res) => {
+      try {
+        if (res.url && res.url.includes("/oauth/token") && res.status === 200) {
+          const body = typeof res.body === "string" ? JSON.parse(res.body) : res.body;
+          if (body && body.access_token && window.ui) {
+            window.ui.preauthorizeApiKey("BearerAuth", body.access_token);
+            console.log("Swagger autorizado con el access_token recibido");
+          }
+        }
+      } catch (e) {
+        console.error("No se pudo autorizar automáticamente:", e);
+      }
+      return res;
+    }
   }
 };
 
